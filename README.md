@@ -1,69 +1,132 @@
 # YouTube Playlist Downloader
 
-Download YouTube videos or playlists as MP3 files.
+Download YouTube videos or playlists as MP3 files, optionally splitting recordings into named tracks.
+
+A Node.js/TypeScript CLI orchestrates `yt-dlp` and `ffmpeg`. No YouTube API key is needed.
+
+## Setup
+
+Requires:
+
+- Node.js **22+** and npm
+- A current `yt-dlp` installation with its EJS challenge solver
+- `ffmpeg`, plus `ffprobe` for splitting (usually installed together)
+
+For example, install `yt-dlp` with:
+
+```bash
+pipx install "yt-dlp[default]"
+# To update an existing pipx installation:
+pipx upgrade yt-dlp
+```
+
+Or use `python3 -m pip install --user -U "yt-dlp[default]"` if your Python environment permits user installs. The CLI also searches `~/.local/bin`.
+
+Install `ffmpeg` with your system package manager:
+
+```bash
+# macOS
+brew install ffmpeg
+
+# Ubuntu/Debian
+sudo apt update && sudo apt install -y ffmpeg
+```
+
+Then, from this repository:
+
+```bash
+npm install
+```
+
+This installs the development dependencies and builds the CLI. There are no npm runtime dependencies. After editing TypeScript, rebuild with `npm run build`.
+
+Install external tools separately. The CLI uses Node as yt-dlp's JavaScript runtime. See [yt-dlp's EJS setup guide](https://github.com/yt-dlp/yt-dlp/wiki/EJS) for other installation methods.
 
 ## Quick start
 
 ```bash
-./yt-download.sh "YOUTUBE_PLAYLIST_OR_VIDEO_URL"
+./bin/yt-download "YOUTUBE_PLAYLIST_OR_VIDEO_URL"
+./bin/yt-download "URL" ~/Music/youtube
 ```
 
-Downloads go to `./downloads` by default.
-
-To choose a different output directory:
+To install the `yt-download` command from this checkout:
 
 ```bash
-./yt-download.sh "YOUTUBE_PLAYLIST_OR_VIDEO_URL" ~/Music/youtube
+npm link
+yt-download "URL"
+yt-download --timestamp-split "URL"
 ```
 
-## First run
+`bin/yt-download` is the executable Node entry point, registered in `package.json`'s `bin` field. You can also run it with `npm start -- "URL"`.
 
-The script auto-installs user-local dependencies where possible:
+Downloads go to `./downloads` relative to your working directory by default. Existing MP3s are skipped unless `--force` is supplied. With no URL, an interactive terminal prompts for one.
 
-- `yt-dlp`
-- `deno`
-
-You still need these system dependencies installed:
-
-- `python3` + `pip`, used to install `yt-dlp`
-- `ffmpeg`, used to create MP3 files
-
-If either is missing, the script prints the right install command for your OS.
-
-Common installs:
+## Timestamp splitting
 
 ```bash
-# macOS
-brew install python ffmpeg
-
-# Ubuntu/Debian
-sudo apt update && sudo apt install -y python3 python3-pip ffmpeg
-
-# Fedora
-sudo dnf install python3 python3-pip ffmpeg
-
-# Arch
-sudo pacman -S python python-pip ffmpeg
+./bin/yt-download --timestamp-split "URL"
+./bin/yt-download --timestamp-split "URL" ~/Music/youtube
 ```
 
-## Options
+For each video, including videos inside playlists:
+
+1. Use chapter metadata supplied by `yt-dlp`.
+2. If there is no usable chapter list, parse the video description for timestamps and track names.
+3. Split from each timestamp to the next, and from the last timestamp to the recording's end.
+
+Supported description formats include:
+
+```text
+00:00 - Opening Theme
+03:12 Second Track
+[07:45] Third Track
+Fourth Track 1:02:03
+```
+
+Track names come from the labels alongside timestamps and are numbered sequentially:
+
+```text
+downloads/Album/
+├── 01 - Album.mp3
+└── 01 - Album - tracks/
+    ├── 01 - Opening Theme.mp3
+    ├── 02 - Second Track.mp3
+    ├── 03 - Third Track.mp3
+    └── 04 - Fourth Track.mp3
+```
+
+If a timestamp has no label, its timestamp becomes the name, for example `02 - 03-12.mp3`. Colons and other unsafe filename characters are replaced with hyphens. Track title, track number, and album title are also written as MP3 metadata.
+
+- At least two valid timestamps/chapters are required, in strictly increasing order and within the recording's duration. Invalid lists are not guessed or reordered.
+- If the first timestamp is after zero, an `Intro` track preserves the preceding audio. Short tracks are not discarded.
+- If no usable timestamps are found, keep the full recording and report that it could not be split. **There is no silence fallback with `--timestamp-split`.**
+- The original MP3 is always retained. Each downloaded source filename gets its own track folder rather than writing all playlist tracks into one shared directory.
+- Existing track folders are skipped unless `--force` is provided. Splitting can run against an already-downloaded MP3; timestamps are refreshed through `yt-dlp`.
+- All cuts finish in a temporary staging folder before being published. Failed cuts leave the original and existing tracks intact.
+- `--force` replaces generated files with matching names, not unrelated files in the track folder. If track names change, older differently named tracks are left in place.
+- Splitting stream-copies the audio without re-encoding. Boundaries are limited to MP3 frame precision. Embedded artwork and other source tags are not copied to the split tracks; they remain in the full MP3.
+
+## Other options
 
 ```bash
-./yt-download.sh --force "URL"
+./bin/yt-download --force "URL"
+./bin/yt-download --force --timestamp-split "URL"
+./bin/yt-download --split "URL"
+./bin/yt-download --help
 ```
 
-Overwrite existing files.
+`--split` enables automatic splitting: timestamps first, then silence detection for recordings at least 15 minutes long. Silence detection uses `-35dB` and a 1.2-second minimum silence, keeping tracks at least 45 seconds long without discarding short fragments. Do not combine `--split` and `--timestamp-split`.
+
+The CLI deliberately ignores external `yt-dlp` configuration so output paths, overwrite behavior, and postprocessing remain predictable. It uses yt-dlp's current default YouTube clients rather than pinning clients in the wrapper.
+
+## Development
 
 ```bash
-./yt-download.sh --split "URL"
+npm run check
+npm test
+npm pack --dry-run
 ```
 
-Split long MP3s into tracks using YouTube chapters first, then silence detection as a fallback. Requires `ffprobe`, usually included with `ffmpeg`.
+Packaging rebuilds the CLI and includes `bin/`, compiled `dist/src/`, and the README, excluding tests and downloads. The package remains private until it is ready to publish.
 
-## Examples
-
-```bash
-./yt-download.sh "https://www.youtube.com/playlist?list=..."
-./yt-download.sh --force "https://www.youtube.com/watch?v=..."
-./yt-download.sh --split "https://www.youtube.com/watch?v=..." ./downloads
-```
+Tests cover timestamp parsing, filename safety, track tags, overwrite behavior, playlist isolation, and failure cleanup. Audio integration tests use local fixtures and skip if `ffmpeg`/`ffprobe` are unavailable. A real `yt-dlp` metadata smoke test also runs when it is installed, against a local HTTP server rather than YouTube.
