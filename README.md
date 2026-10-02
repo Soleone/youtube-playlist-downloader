@@ -12,7 +12,35 @@ Requires:
 - A current `yt-dlp` installation with its EJS challenge solver
 - `ffmpeg`, plus `ffprobe` for splitting (usually installed together)
 
-For example, install `yt-dlp` with:
+### Ubuntu 26.04: apt backports
+
+With `resolute-backports` enabled, install or update the current backported version:
+
+```bash
+sudo apt-get update
+sudo apt-get install -t resolute-backports yt-dlp
+/usr/bin/yt-dlp --version
+```
+
+A plain `sudo apt install yt-dlp` can keep an older version from the main release repository: backports have lower priority unless explicitly selected. The available `2026.08.19` backport includes the EJS solver and has been checked against a small audio sample from YouTube.
+
+Use the backports repository matching your Ubuntu release; `resolute-backports` is specific to Ubuntu 26.04. Other distributions may offer different versions or backports instructions.
+
+**Switching from a uv installation:** the CLI prefers `~/.local/bin/yt-dlp` over `/usr/bin/yt-dlp`. After successfully upgrading and verifying the apt copy, remove the uv-managed copy to let the CLI use apt:
+
+```bash
+uv tool uninstall yt-dlp
+```
+
+### User-local alternative: uv or pipx
+
+If your distribution does not offer a recent enough version, install a current user-local `yt-dlp`, including the EJS solver, with [uv](https://docs.astral.sh/uv/):
+
+```bash
+uv tool install --upgrade "yt-dlp[default]"
+```
+
+This command also updates an existing uv installation. Alternatively, use pipx:
 
 ```bash
 pipx install "yt-dlp[default]"
@@ -20,7 +48,7 @@ pipx install "yt-dlp[default]"
 pipx upgrade yt-dlp
 ```
 
-Or use `python3 -m pip install --user -U "yt-dlp[default]"` if your Python environment permits user installs. The CLI also searches `~/.local/bin`.
+Or use `python3 -m pip install --user -U "yt-dlp[default]"` if your Python environment permits user installs. The CLI prefers `~/.local/bin` over system copies. Distribution packages such as apt can lag behind YouTube changes.
 
 Install `ffmpeg` with your system package manager:
 
@@ -118,6 +146,27 @@ If a timestamp has no label, its timestamp becomes the name, for example `02 - 0
 `--split` enables automatic splitting: timestamps first, then silence detection for recordings at least 15 minutes long. Silence detection uses `-35dB` and a 1.2-second minimum silence, keeping tracks at least 45 seconds long without discarding short fragments. Do not combine `--split` and `--timestamp-split`.
 
 The CLI deliberately ignores external `yt-dlp` configuration so output paths, overwrite behavior, and postprocessing remain predictable. It uses yt-dlp's current default YouTube clients rather than pinning clients in the wrapper.
+
+## Troubleshooting YouTube HTTP 403
+
+A `403: Forbidden` while downloading video data happens before timestamp splitting: YouTube rejected the media request. It can be intermittent, or caused by an outdated extractor.
+
+First update `yt-dlp` using the installer that manages it. For Ubuntu 26.04 with backports enabled:
+
+```bash
+sudo apt-get update
+sudo apt-get install -t resolute-backports yt-dlp
+/usr/bin/yt-dlp --version
+```
+
+For uv, include the `default` extras for the EJS solver:
+
+```bash
+uv tool install --upgrade "yt-dlp[default]"
+~/.local/bin/yt-dlp --version
+```
+
+Then retry the same `yt-download` command. If both copies are installed, the CLI still prefers the user-local copy; see the switching instructions above. A user-local installation leaves apt's package untouched. Do not hide the outdated-version warning with `--no-update`; that does not fix extraction. If a current version still returns 403, network/IP restrictions or other YouTube changes may need separate investigation.
 
 ## Development
 
