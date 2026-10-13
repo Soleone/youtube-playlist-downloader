@@ -8,6 +8,7 @@
   "year": 2026,
   "tech": ["Node.js", "TypeScript", "yt-dlp", "FFmpeg"],
   "repo": "https://github.com/Soleone/youtube-playlist-downloader",
+  "live": "https://yt-download.soleone.xyz",
   "media": {
     "hero": "docs/media/hero.png",
     "motion": "docs/media/demo.webp",
