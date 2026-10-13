@@ -12,9 +12,12 @@
     "prepack": "npm run build",
     "start": "node bin/yt-download",
     "test": "npm run build && node --test dist/test/*.test.js",
-    "check": "tsc --noEmit"
+    "check": "tsc --noEmit",
+    "demo": "showcase terminal --serve",
+    "media:capture": "node scripts/capture-demo.mjs"
   },
   "devDependencies": {
+    "@soleone/showcase": "^0.2.0",
     "@types/node": "^22.0.0",
     "typescript": "^6.0.3"
   }

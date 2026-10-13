@@ -1,0 +1,3 @@
+#!/usr/bin/env node
+// Stand-in for ffprobe (see ../.demo/ffprobe.mjs). CommonJS on purpose: extensionless ES modules do not run in the sandbox.
+import("../.demo/ffprobe.mjs");

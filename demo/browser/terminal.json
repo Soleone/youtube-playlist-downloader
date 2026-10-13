@@ -1,0 +1,39 @@
+{
+  "project": "../..",
+  "pitch": "Download a YouTube playlist as MP3s, split into named tracks. This is the real CLI, running in your browser on a sample playlist.",
+  "mount": {
+    "node_modules/youtube-playlist-downloader": {
+      "from": "../..",
+      "include": ["bin", "package.json", "README.md"]
+    },
+    "node_modules/youtube-playlist-downloader/dist": {
+      "from": "../../dist",
+      "include": ["src"]
+    },
+    ".": { "from": "./home" }
+  },
+  "env": {
+    "PATH": "~/bin:/usr/local/bin:/usr/bin:/bin"
+  },
+  "setup": [
+    "chmod +x bin/yt-download bin/yt-dlp bin/ffmpeg bin/ffprobe"
+  ],
+  "welcome": [
+    "\u001b[1myt-download\u001b[0m saves YouTube videos and playlists as MP3s and can split long mixes into named tracks.",
+    "A sample playlist of three mixes is ready: one with chapters, one with a track list in its description, one with neither.",
+    "",
+    "  yt-download --timestamp-split \"https://www.youtube.com/playlist?list=PL-sample-mixes\"",
+    "                                    download all three, split by chapters or timestamps",
+    "  ls -R downloads                   see the tracks",
+    "  yt-download --split \"https://www.youtube.com/playlist?list=PL-sample-mixes\"",
+    "                                    also split the live set by its silences",
+    "",
+    "Or press the buttons above."
+  ],
+  "hints": [
+    "yt-download --timestamp-split \"https://www.youtube.com/playlist?list=PL-sample-mixes\"",
+    "ls -R downloads",
+    "yt-download --split \"https://www.youtube.com/playlist?list=PL-sample-mixes\"",
+    "yt-download --help"
+  ]
+}

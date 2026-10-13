@@ -1,0 +1,36 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Soleone/showcase/main/schema/showcase.schema.json",
+  "title": "YouTube Playlist Downloader",
+  "pitch": "Download YouTube videos or playlists as MP3s, and split long mixes into named tracks.",
+  "description": "Splits by chapters, then by the timestamps in the description, and optionally by silence. Cuts are staged, so a failed one never touches existing tracks, and the full MP3 is always kept.",
+  "kind": "cli",
+  "stage": "prototype",
+  "year": 2026,
+  "tech": ["Node.js", "TypeScript", "yt-dlp", "FFmpeg"],
+  "repo": "https://github.com/Soleone/youtube-playlist-downloader",
+  "media": {
+    "hero": "docs/media/hero.png",
+    "motion": "docs/media/demo.webp",
+    "capture": "npm run media:capture"
+  },
+  "demo": {
+    "strategy": "browser-terminal",
+    "local": "npm run demo",
+    "externals": [
+      {
+        "name": "YouTube, through yt-dlp",
+        "type": "service",
+        "seam": "yt-dlp is looked up on the PATH; the demo puts a stand-in first (demo/browser/home/.demo/yt-dlp.mjs)",
+        "standIn": "simulated",
+        "note": "Nothing is downloaded: a stand-in for yt-dlp knows one invented sample playlist and writes placeholder files without sound."
+      },
+      {
+        "name": "FFmpeg and ffprobe",
+        "type": "app",
+        "seam": "ffmpeg and ffprobe are looked up on the PATH; the demo puts stand-ins first (demo/browser/home/.demo)",
+        "standIn": "simulated",
+        "note": "Cutting and silence detection are simulated from the sample's track lengths, so the split files are placeholders too."
+      }
+    ]
+  }
+}

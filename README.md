@@ -2,6 +2,10 @@
 
 Download YouTube videos or playlists as MP3 files, optionally splitting recordings into named tracks.
 
+![yt-download fetching a sample playlist and splitting each mix into named tracks](docs/media/demo.webp)
+
+**[Try it in your browser](https://yt-download.soleone.xyz)**, no install. A sample playlist stands in for YouTube.
+
 A Node.js/TypeScript CLI orchestrates `yt-dlp` and `ffmpeg`. No YouTube API key is needed.
 
 ## Setup

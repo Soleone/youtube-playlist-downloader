@@ -1,0 +1,42 @@
+{
+  "playlist": {
+    "id": "PL-sample-mixes",
+    "title": "Sample Mixes",
+    "videos": ["nightDrive1", "rainyWindow", "harborSet03"]
+  },
+  "videos": {
+    "nightDrive1": {
+      "title": "Night Drive (Synthwave Mix)",
+      "duration": 1830,
+      "sizeMiB": 41.87,
+      "description": "Six tracks for the drive home. Chapters are in the progress bar.",
+      "chapters": [
+        { "start_time": 0, "title": "Neon Overpass" },
+        { "start_time": 284, "title": "Tail Lights" },
+        { "start_time": 571, "title": "Coastal Highway" },
+        { "start_time": 902, "title": "Rearview" },
+        { "start_time": 1196, "title": "Exit 49" },
+        { "start_time": 1517, "title": "Last Gas Station" }
+      ]
+    },
+    "rainyWindow": {
+      "title": "Rainy Window Lo-fi",
+      "duration": 1512,
+      "sizeMiB": 34.6,
+      "description": "Beats to read to. No chapters, so the track list lives here:\n\n0:42 - Kettle On\n04:10 Drizzle\n[08:31] Second Cup\nPaper Lanterns 12:55\n17:20 - Window Seat\n21:48 - Fog Lifts\n\nThanks for listening!",
+      "chapters": []
+    },
+    "harborSet03": {
+      "title": "Live at the Harbor Stage (full set)",
+      "duration": 1620,
+      "sizeMiB": 37.08,
+      "description": "Recorded on the pier last summer. No track list, sorry!",
+      "chapters": [],
+      "silences": [
+        [401.2, 403.0],
+        [812.5, 814.4],
+        [1203.8, 1205.6]
+      ]
+    }
+  }
+}
