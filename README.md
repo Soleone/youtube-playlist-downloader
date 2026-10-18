@@ -93,6 +93,17 @@ yt-download --timestamp-split "URL"
 
 Downloads go to `./downloads` relative to your working directory by default. Existing MP3s are skipped unless `--force` is supplied. With no URL, an interactive terminal prompts for one.
 
+## Add the last songs of a playlist
+
+```bash
+./bin/yt-download --last 5 "PLAYLIST_URL"
+./bin/yt-download --last 5 "PLAYLIST_URL" ~/Music/youtube
+```
+
+`--last N` selects the final N entries in playlist order, not by upload date. Use the same output directory to add them to the existing playlist folder. Original playlist numbering is retained, existing MP3s are skipped, and earlier downloads are left untouched. If the playlist has fewer than N entries, all are selected. N must be a positive whole number.
+
+This selects N playlist entries, not N missing songs: already-downloaded entries still count toward the limit. You can combine it with `--timestamp-split`, `--split`, or `--force`.
+
 ## Timestamp splitting
 
 ```bash

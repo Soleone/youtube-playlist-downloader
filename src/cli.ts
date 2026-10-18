@@ -17,6 +17,7 @@ Downloads MP3 audio into ./downloads by default.
 
   --timestamp-split  Split by chapters, then description timestamps. No silence fallback.
   --split            Split by timestamps, then silence detection for recordings >=15 minutes.
+  --last N           Download only the last N playlist entries, keeping playlist order.
   --force            Overwrite downloads and generated tracks.
   --help, -h         Show this help.
 
@@ -62,6 +63,7 @@ export async function main(): Promise<void> {
     allowPositionals: true,
     options: {
       force: { type: 'boolean' },
+      last: { type: 'string' },
       split: { type: 'boolean' },
       'timestamp-split': { type: 'boolean' },
       help: { type: 'boolean', short: 'h' },
@@ -73,6 +75,9 @@ export async function main(): Promise<void> {
   }
   if (positionals.length > 2) throw new Error('Expected a URL and optional output directory. Use --help for usage.');
   if (values.split && values['timestamp-split']) throw new Error('Choose --split or --timestamp-split, not both.');
+  if (values.last !== undefined && (!/^[1-9]\d*$/.test(values.last) || !Number.isSafeInteger(Number(values.last)))) {
+    throw new Error('--last must be a positive whole number.');
+  }
   if (Number(process.versions.node.split('.')[0]) < 22) throw new Error('Node.js 22 or newer is required.');
   let url = positionals[0];
   if (!url) {
@@ -104,6 +109,7 @@ export async function main(): Promise<void> {
       '--paths', output, '--output', '%(playlist,title)s/%(playlist_index,autonumber)02d - %(title)s.%(ext)s',
       force ? '--force-overwrites' : '--no-overwrites',
     ];
+    if (values.last !== undefined) args.push('--playlist-items', `-${values.last}:`);
     if (split) {
       await writeFile(manifest, '');
       args.push('--print-to-file', 'after_move:%()j', manifest);

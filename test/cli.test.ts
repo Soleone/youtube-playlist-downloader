@@ -30,9 +30,16 @@ const args = process.argv.slice(2);
 if (args.includes('--version')) { console.log('2026.03.17'); process.exit(0); }
 writeFileSync(process.env.FAKE_ARGUMENTS, JSON.stringify(args));
 if (process.env.FAKE_FAIL) { console.error('simulated download failure'); process.exit(8); }
-const records = JSON.parse(process.env.FAKE_METADATA);
+let records = JSON.parse(process.env.FAKE_METADATA).map((record, index) => ({ ...record, playlist_index: index + 1 }));
+const selection = args.indexOf('--playlist-items');
+if (selection !== -1) {
+  const range = args[selection + 1];
+  if (!/^-[1-9]\\d*:$/.test(range)) throw new Error('Unexpected playlist selection: ' + range);
+  records = records.slice(Number(range.slice(0, -1)));
+}
 for (const record of records) {
-  record.filepath = join(args[args.indexOf('--paths') + 1], record.title, '01 - ' + record.title + '.mp3');
+  const index = record.playlist ? String(record.playlist_index).padStart(2, '0') : '01';
+  record.filepath = join(args[args.indexOf('--paths') + 1], record.playlist ?? record.title, index + ' - ' + record.title + '.mp3');
   mkdirSync(dirname(record.filepath), { recursive: true });
   if (!existsSync(record.filepath) || args.includes('--force-overwrites')) copyFileSync(process.env.FAKE_SOURCE, record.filepath);
 }
@@ -63,10 +70,49 @@ process.exit(result.status ?? 1);
 test('help and invalid options do not launch a downloader', async () => {
   const { stdout } = await execute(process.execPath, [cli, '--help'], { env: { ...process.env, PATH: '' } });
   assert.match(stdout, /--timestamp-split/);
+  assert.match(stdout, /--last N/);
   await assert.rejects(execute(process.execPath, [cli, '--unknown']), /Unknown option/);
   await assert.rejects(execute(process.execPath, [cli, '--timestamp-split', '--split', 'https://youtube.com/']), /Choose --split or --timestamp-split/);
   await assert.rejects(execute(process.execPath, [cli], { env: { ...process.env, PATH: '' } }), /Provide a YouTube URL/);
   await assert.rejects(execute(process.execPath, [cli, 'file:\/\/tmp\/audio.mp3']), /URL must start/);
+});
+
+test('--last rejects missing, non-positive, fractional, and unsafe counts before launching tools', async () => {
+  for (const count of ['0', '-1', '1.5', 'abc', 'Infinity', '9007199254740992']) {
+    await assert.rejects(execute(process.execPath, [cli, `--last=${count}`, 'https://youtube.com/'], { env: { ...process.env, PATH: '' } }), /--last must be a positive whole number/);
+  }
+  await assert.rejects(execute(process.execPath, [cli, '--last']), /argument missing|requires an argument/);
+});
+
+test('--last appends selected songs with original numbering and preserves existing songs', { skip: !hasAudioTools }, async (t) => {
+  const f = await fixture(t);
+  const records = Array.from({ length: 8 }, (_, index) => ({ title: `Song ${index + 1}`, playlist: 'Playlist' }));
+  const overrides = { FAKE_METADATA: JSON.stringify(records) };
+  const folder = join(f.output, 'Playlist');
+  await mkdir(folder, { recursive: true });
+  await writeFile(join(folder, '01 - Song 1.mp3'), 'older song');
+  await writeFile(join(folder, '07 - Song 7.mp3'), 'existing song');
+  await f.run(['--last', '5'], overrides);
+  const args = JSON.parse(await readFile(f.env.FAKE_ARGUMENTS, 'utf8'));
+  assert.equal(args[args.indexOf('--playlist-items') + 1], '-5:');
+  assert.deepEqual(await readdir(folder), ['01 - Song 1.mp3', ...records.slice(-5).map((record, index) => `0${index + 4} - ${record.title}.mp3`)]);
+  assert.equal(await readFile(join(folder, '01 - Song 1.mp3'), 'utf8'), 'older song');
+  assert.equal(await readFile(join(folder, '07 - Song 7.mp3'), 'utf8'), 'existing song');
+  await writeFile(join(folder, '08 - Song 8.mp3'), 'replace me');
+  await f.run(['--last', '1', '--force'], overrides);
+  assert.deepEqual(await readFile(join(folder, '08 - Song 8.mp3')), await readFile(f.source));
+  await f.run(['--last', '20'], overrides);
+  assert.equal((await readdir(folder)).length, 8);
+});
+
+test('--last works with timestamp splitting and skips unselected recordings', { skip: !hasAudioTools }, async (t) => {
+  const f = await fixture(t);
+  await f.run(['--last', '1', '--timestamp-split'], { FAKE_METADATA: JSON.stringify([
+    { title: 'Unselected' },
+    { title: 'Album', description: '00:00 Opening\n00:03 Finale' },
+  ]) });
+  assert.deepEqual(await readdir(f.output), ['Album']);
+  assert.deepEqual(await readdir(f.tracks), ['01 - Opening.mp3', '02 - Finale.mp3']);
 });
 
 test('downloads, splits with sequential names and ID3 tags, and preserves the source', { skip: !hasAudioTools }, async (t) => {
