@@ -25,7 +25,7 @@
   },
   "devDependencies": {
     "@soleone/showcase-capture": "^0.1.0",
-    "@soleone/showcase-terminal": "^0.1.0",
+    "@soleone/showcase-terminal": "^0.2.0",
     "@types/node": "^22.0.0",
     "typescript": "^6.0.3"
   }
